@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Kasir RINGKAS FIX HARI INI - Admin Kasir Tegas</title><style>
+*{box-sizing:border-box;font-family:'Segoe UI',Arial;margin:0;padding:0}body{background:#f6f6f6}
+.header{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20;font-size:12px;color:white}
+.header.admin{background:#1B5E20}.header.kasir{background:#E53935}
+.nav button{padding:5px 10px;border:none;border-radius:6px;font-size:10px;margin-left:4px;cursor:pointer;font-weight:bold}
+.nav button.admin-only{background:#FFC107;color:#000}
+.tab{display:none;padding:10px}.tab.active{display:block}
+.card{background:white;border-radius:10px;padding:10px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.btn{width:100%;padding:10px;border:none;border-radius:8px;font-weight:bold;color:white;margin-top:5px;cursor:pointer}
+.btn-red{background:#E53935}.btn-green{background:#2E7D32}.btn-blue{background:#1565C0}.btn-orange{background:#FF9800}
+input,select{width:100%;padding:9px;margin:3px 0;border:1px solid #ddd;border-radius:6px;font-size:12px;background:white}
+.tabel{width:100%;font-size:11px;border-collapse:collapse;background:white}.tabel th,.tabel td{border:1px solid #ddd;padding:6px;text-align:left}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.badge{padding:3px 8px;border-radius:10px;font-size:10px;font-weight:bold}
+.badge-admin{background:#FFEB3B;color:#000}.badge-kasir{background:#FFF;color:#E53935}
+.kasir-box{display:flex;gap:8px;height:calc(100vh - 60px)} .left{flex:1;background:white;border-radius:10px;overflow:auto;padding:8px} .right{width:340px;background:white;border-radius:10px;display:flex;flex-direction:column}
+@media(max-width:900px){.kasir-box{flex-direction:column;height:auto}.right{width:100%}}
+.menu-card{border:1px solid #eee;border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:#fff} .menu-card:hover{border-color:#E53935}
+.role-banner{padding:8px;border-radius:6px;margin-bottom:8px;font-size:11px;font-weight:bold;text-align:center}
+.role-banner.admin{background:#E8F5E9;color:#1B5E20;border:1px solid #A5D6A7}
+.role-banner.kasir{background:#FFEBEE;color:#B71C1C;border:1px solid #EF9A9A}
+</style></head><body>
+<div id="header" class="header admin"><span>💰 BEBAS HAMBATAN <small id="infoC" class="badge badge-admin">-</small></span><div class="nav"><button onclick="showTab('kasir')">🛒 Kasir</button><button id="navStock" class="admin-only" onclick="showTab('stock')">📦 All Stock</button><button id="navResep" class="admin-only" onclick="showTab('resep')">🍜 Resep/Menu</button><button id="navLap" class="admin-only" onclick="showTab('laporan')">📊 Laporan HPP</button><button onclick="logout()" style="background:#000;color:white">Logout</button></div></div>
+
+<div id="login" class="tab active"><div class="card" style="max-width:420px;margin:20px auto"><h3 style="text-align:center">LOGIN - ADMIN & KASIR TEGAS</h3>
+<div style="display:flex;gap:6px;margin:8px 0"><div style="flex:1;background:#E8F5E9;padding:8px;border-radius:6px;text-align:center"><b style="color:#1B5E20">ADMIN PUSAT</b><br><small style="font-size:9px">Bisa Stock, Resep, Laporan, Hapus/Edit<br>Kode: 1212 / BEBAS</small></div><div style="flex:1;background:#FFEBEE;padding:8px;border-radius:6px;text-align:center"><b style="color:#B71C1C">KASIR CABANG</b><br><small style="font-size:9px">Hanya jualan & Print<br>Tidak bisa lihat HPP & Stock</small></div></div>
+<select id="role" onchange="togglePin()"><option value="cabang">KASIR CABANG - Tanpa Kode (Hanya Jualan)</option><option value="admin">ADMIN PUSAT - Pakai Kode Rahasia (Full Akses)</option></select><div id="pinBox" style="display:none"><input id="pin" type="password" placeholder="Kode Admin: 1212 atau BEBAS"></div><input id="namaKasir" placeholder="Nama Kasir: misal Siti / Zilham"><input id="namaCabang" placeholder="Nama Cabang: misal Bejen 001"><button class="btn btn-red" onclick="doLogin()">MASUK</button><div id="loginStatus" style="font-size:10px;margin-top:6px;color:#c0392b"></div></div></div>
+
+<div id="kasir" class="tab"><div id="roleBannerKasir" class="role-banner"></div><div class="kasir-box"><div class="left"><div style="display:flex;gap:5px;margin-bottom:6px"><input id="cariMenu" placeholder="Cari menu..." oninput="renderKasir()"><input id="pelanggan" placeholder="Pelanggan/Meja" style="max-width:130px"></div><div id="menuGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px"></div><div style="font-size:9px;color:#999;margin-top:6px" id="menuCount"></div></div><div class="right"><div style="padding:10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between"><b>Daftar Pesanan</b><small id="cabangLabel"></small></div><div id="listKeranjang" style="flex:1;overflow:auto;padding:6px;font-size:11px"></div><div style="padding:8px;border-top:2px solid #E53935;background:#FFF8E1"><div style="display:flex;justify-content:space-between;font-size:12px"><span>Subtotal</span><span>Rp<span id="sub">0</span></span></div><div style="display:flex;justify-content:space-between;font-weight:bold;font-size:16px;color:#E53935"><span>TOTAL</span><span>Rp<span id="total">0</span></span></div><input id="bayar" type="number" placeholder="Uang Bayar" oninput="hitungKembali()" style="background:#FFF9C4"><div style="font-size:11px;margin:3px 0">Kembali: Rp<span id="kembali">0</span></div><button class="btn btn-red" onclick="bayar()">BAYAR - POTONG STOCK OTOMATIS</button><button class="btn btn-blue" style="padding:7px;font-size:11px" onclick="printStruk()">🖨️ PRINT CUSTOMER (Tanpa HPP/Laba)</button><div id="warnStock" style="display:none;color:#c0392b;font-size:10px;margin-top:4px;background:#FFEBEE;padding:5px;border-radius:5px"></div><div id="debugInfo" style="font-size:8px;color:#999;margin-top:4px"></div></div></div></div></div>
+
+<div id="stock" class="tab"><div id="roleBannerStock" class="role-banner admin"></div><div class="card"><h4>📦 ALL STOCK - Kode 01,02 + Berat Total Kg (ADMIN ONLY)</h4><div class="grid-3"><input id="sKode" placeholder="Kode: 01 / MIE01 (auto B01 jika kosong)"><input id="sNama" placeholder="Nama Stock: Mie, Ayam, Beras, Telur"><select id="sKategori"><option>Bahan Baku</option><option>Bahan Jadi</option><option>Makanan</option><option>Minuman</option><option>Lainnya</option></select></div><div class="grid-3"><input id="sBerat" type="number" step="0.001" placeholder="Berat Masuk: 50 (kg/pcs)"><select id="sSatuanStock"><option value="kg">kg</option><option value="pcs">pcs</option><option value="liter">liter</option></select><input id="sHarga" type="number" placeholder="Harga Total Beli Rp"></div><button class="btn btn-red" onclick="tambahStock()">+ TAMBAH STOCK - SIMPAN KE PUSAT</button><div style="font-size:10px;background:#E3F2FD;padding:6px;border-radius:6px;margin-top:6px">FIX HARI INI: Setelah tambah, stock langsung muncul di tabel bawah & di dropdown resep. Kode otomatis keluar. Contoh: Kode <b>01 Mie 50kg Rp600rb = Rp12rb/kg</b></div></div><div class="card"><div style="overflow:auto"><table class="tabel" id="tabelStock"></table></div></div></div>
+
+<div id="resep" class="tab"><div id="roleBannerResep" class="role-banner admin"></div><div class="card"><h4>🍜 TAMBAH MENU BARU</h4><div class="grid-3"><input id="mNama" placeholder="Nama Menu: Mie Ayam"><input id="mHarga" type="number" placeholder="Harga Jual: 12000"><select id="mKategori"><option>Makanan</option><option>Minuman</option><option>Snack</option></select></div><button class="btn btn-red" onclick="tambahMenu()">+ TAMBAH MENU</button></div><div class="card"><h4>Atur Resep: Pilih Menu → Pilih Stock Kode → Isi gram/pcs</h4><div style="background:#FFF3E0;padding:6px;border-radius:6px;font-size:10px;margin-bottom:6px" id="stockInfoResep">Loading stock...</div><select id="rMenu"></select><div class="grid-3"><select id="rStock"></select><input id="rQty" type="number" step="0.001" placeholder="Pakai: 100"><select id="rSatuanPakai"><option value="gram">gram (g)</option><option value="kg">kg</option><option value="pcs">pcs</option><option value="ml">ml</option><option value="liter">liter</option></select></div><button class="btn btn-green" onclick="tambahResep()">+ TAMBAH KE RESEP MENU</button><div id="listResep" style="margin-top:8px"></div><div id="infoHPP" style="background:#E8F5E9;padding:8px;border-radius:6px;font-size:11px;margin-top:6px"></div></div></div>
+
+<div id="laporan" class="tab"><div id="roleBannerLap" class="role-banner admin"></div><div class="card"><h4>📊 LAPORAN HPP - ADMIN ONLY</h4><div id="ringkasan" style="font-size:11px">Loading...</div><button class="btn btn-blue" onclick="loadLaporan()">🔄 Refresh</button></div><div class="card"><h5>All Stock Sisa (Bisa Edit/Hapus)</h5><div style="overflow:auto"><table class="tabel" id="tabelLaporanStock"></table></div></div><div class="card"><h5>Penjualan (Bisa Hapus)</h5><div style="overflow:auto"><table class="tabel" id="tabelLaporanJual"></table></div></div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, addDoc, getDocs, query, orderBy, onSnapshot, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig = { apiKey: "AIzaSyByZ6nSKWhx2B8RfjAvTsyuAuv1XMcVq4I", authDomain: "kasir-bebas-hambatan.firebaseapp.com", projectId: "kasir-bebas-hambatan", storageBucket: "kasir-bebas-hambatan.firebasestorage.app", messagingSenderId: "283163883169", appId: "1:283163883169:web:6d68605a811ecdceb762e0" };
+const app = initializeApp(firebaseConfig); const db = getFirestore(app); window.db=db; window.fs={collection,doc,setDoc,addDoc,getDocs,query,orderBy,onSnapshot,updateDoc,increment};
+</script>
+<script>
+let menu=[], stockList=[], resepList=[], keranjang=[], role="", cabang="", kasir="", total=0;
+function togglePin(){ document.getElementById('pinBox').style.display=document.getElementById('role').value==='admin'?'block':'none'; }
+function updateRoleUI(){
+ const isAdmin=role==="admin";
+ document.getElementById('header').className=isAdmin?'header admin':'header kasir';
+ document.getElementById('infoC').innerHTML=isAdmin?`ADMIN PUSAT - ${cabang}`:`KASIR - ${cabang}`;
+ document.getElementById('infoC').className=isAdmin?'badge badge-admin':'badge badge-kasir';
+ document.getElementById('navStock').style.display=isAdmin?'inline-block':'none';
+ document.getElementById('navResep').style.display=isAdmin?'inline-block':'none';
+ document.getElementById('navLap').style.display=isAdmin?'inline-block':'none';
+ let adminTxt=`🔐 MODE ADMIN PUSAT - Full Akses: Stock, Resep, Laporan HPP, Edit/Hapus`;
+ let kasirTxt=`🛒 MODE KASIR CABANG ${cabang} - Hanya Jualan & Print. Tidak bisa lihat HPP/Laba/Stock Pusat`;
+ document.getElementById('roleBannerKasir').innerHTML=isAdmin?adminTxt:kasirTxt;
+ document.getElementById('roleBannerKasir').className=isAdmin?'role-banner admin':'role-banner kasir';
+ document.getElementById('roleBannerStock').innerHTML=adminTxt; document.getElementById('roleBannerResep').innerHTML=adminTxt; document.getElementById('roleBannerLap').innerHTML=adminTxt;
+}
+function showTab(id){
+ if(role!=="admin" && ["stock","resep","laporan"].includes(id)){ alert("⛔ Hanya ADMIN PUSAT yang bisa buka! Login pakai kode 1212 / BEBAS"); return; }
+ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); document.getElementById(id).classList.add('active');
+ if(id==="laporan") loadLaporan(); if(id==="stock") renderStock(); if(id==="resep") renderResep(); if(id==="kasir") renderKasir();
+}
+function doLogin(){
+ let r=document.getElementById('role').value; let pin=document.getElementById('pin').value.trim();
+ let savedPin=localStorage.getItem('kbh_pin')||'1212';
+ if(r==="admin" && !["1212","BEBAS","bebeas","1234","admin",savedPin].includes(pin)){ document.getElementById('loginStatus').innerHTML="❌ Kode salah! Default 1212 / BEBAS"; return; }
+ role=r; cabang=document.getElementById('namaCabang').value.trim()||"Cabang"; kasir=document.getElementById('namaKasir').value.trim()||"Kasir";
+ localStorage.setItem('kbh_role',r); localStorage.setItem('kbh_cabang',cabang); localStorage.setItem('kbh_kasir',kasir);
+ document.getElementById('login').classList.remove('active'); init();
+}
+async function init(){
+ updateRoleUI(); document.getElementById('cabangLabel').innerText=cabang;
+ // LOAD LOCAL FIRST (FIX TIDAK MASUK)
+ try{
+  let localStock=JSON.parse(localStorage.getItem('kbh_stock')||'[]');
+  let localMenu=JSON.parse(localStorage.getItem('kbh_menu')||'[]');
+  let localResep=JSON.parse(localStorage.getItem('kbh_resep')||'[]');
+  if(localStock.length>0) stockList=localStock;
+  if(localMenu.length>0) menu=localMenu;
+  if(localResep.length>0) resepList=localResep;
+ }catch(e){}
+ await loadData(); renderKasir(); setupRT(); showTab('kasir');
+}
+async function loadData(){
+ try{
+  if(window.db){
+   let s1=await window.fs.getDocs(window.fs.collection(window.db,"menu")); if(s1.docs.length>0) menu=s1.docs.map(d=>({id:d.id,...d.data()}));
+   let s2=await window.fs.getDocs(window.fs.collection(window.db,"bahan_baku")); if(s2.docs.length>0) stockList=s2.docs.map(d=>({id:d.id,...d.data()}));
+   let s3=await window.fs.getDocs(window.fs.collection(window.db,"resep")); if(s3.docs.length>0) resepList=s3.docs.map(d=>({id:d.id,...d.data()}));
+  }
+  saveLocal(); renderAll();
+ }catch(e){ console.log("Firebase load error",e); document.getElementById('debugInfo').innerText="Offline mode: "+e.message; renderAll(); }
+}
+function saveLocal(){ localStorage.setItem('kbh_stock', JSON.stringify(stockList)); localStorage.setItem('kbh_menu', JSON.stringify(menu)); localStorage.setItem('kbh_resep', JSON.stringify(resepList)); }
+function renderAll(){ renderStock(); renderResep(); renderKasir(); }
+function setupRT(){
+ if(!window.db) return;
+ try{
+  window.fs.onSnapshot(window.fs.collection(window.db,"menu"), s=>{ if(s.docs.length>=0){ let remote=s.docs.map(d=>({id:d.id,...d.data()})); if(remote.length>0){ menu=remote; saveLocal(); renderKasir(); renderResep(); } } });
+  window.fs.onSnapshot(window.fs.collection(window.db,"bahan_baku"), s=>{ let remote=s.docs.map(d=>({id:d.id,...d.data()})); if(remote.length>0){ stockList=remote; } else if(s.docs.length===0 && stockList.length===0){ /* keep local */ } saveLocal(); renderStock(); renderResep(); });
+  window.fs.onSnapshot(window.fs.collection(window.db,"resep"), s=>{ let remote=s.docs.map(d=>({id:d.id,...d.data()})); if(remote.length>0){ resepList=remote; } saveLocal(); renderResep(); });
+ }catch(e){ console.log(e); }
+}
+function toKg(qty, satuanPakai){ if(satuanPakai==="kg") return qty; if(satuanPakai==="gram") return qty/1000; if(satuanPakai==="liter") return qty; if(satuanPakai==="ml") return qty/1000; return 0; }
+function toPcs(qty, satuanPakai){ if(satuanPakai==="pcs") return qty; return 0; }
+
+// === FIX STOCK MASUK ===
+async function tambahStock(){
+ let kode=document.getElementById('sKode').value.trim().toUpperCase();
+ let nama=document.getElementById('sNama').value.trim();
+ let kat=document.getElementById('sKategori').value;
+ let berat=parseFloat(document.getElementById('sBerat').value)||0;
+ let satuan=document.getElementById('sSatuanStock').value;
+ let hargaTotal=parseFloat(document.getElementById('sHarga').value)||0;
+ if(!nama || berat<=0){ alert("Isi Nama Stock & Berat!"); return; }
+ if(!kode){ kode="B"+String(stockList.length+1).padStart(2,"0"); } // B01,B02
+ let hargaPerSatuan = berat>0 ? (hargaTotal/berat) : 0;
+ let obj={kode,nama,kategori:kat,beratTotal:berat,stok:berat,satuan,hargaTotal,hargaPerSatuan,createdAt:Date.now()};
+ // LOCAL SAVE FIRST (langsung masuk)
+ stockList = stockList.filter(s=>s.id!==kode); stockList.push({id:kode, ...obj}); saveLocal(); renderStock();
+ document.getElementById('sKode').value=""; document.getElementById('sNama').value=""; document.getElementById('sBerat').value=""; document.getElementById('sHarga').value="";
+ document.getElementById('stockInfoResep').innerHTML=`✅ Stock ${kode} ${nama} masuk! Sekarang ada ${stockList.length} stock. Cek dropdown resep sudah ada kode ${kode}.`;
+ // FIREBASE SYNC
+ try{ if(window.db) await window.fs.setDoc(window.fs.doc(window.db,"bahan_baku",kode), obj); }catch(e){ console.log("Firebase error but local saved",e); }
+ alert(`✅ Stock ${kode} - ${nama} ${berat}${satuan} MASUK! Sekarang cek Tab Resep/Menu -> kode sudah keluar!`);
+}
+function renderStock(){
+ let html=`<tr><th>Kode</th><th>Nama</th><th>Kat</th><th>Sisa</th><th>Harga/satuan</th><th>Aksi</th></tr>`;
+ if(stockList.length===0) html+=`<tr><td colspan=6 style="text-align:center;color:#999">Belum ada stock. Isi di atas bung!</td></tr>`;
+ html+=stockList.map(s=>`<tr><td><b style="background:#E53935;color:white;padding:2px 5px;border-radius:4px">${s.kode||s.id}</b></td><td>${s.nama}</td><td>${s.kategori||"-"}</td><td><b>${s.stok}</b> ${s.satuan}</td><td>Rp${(s.hargaPerSatuan||0).toLocaleString('id-ID')}/${s.satuan}</td><td><button onclick="editStock('${s.id}')" style="background:#FF9800;color:white;border:none;border-radius:4px;padding:3px 6px;font-size:9px">Edit</button> <button onclick="hapusStock('${s.id}')" style="background:#c0392b;color:white;border:none;border-radius:4px;padding:3px 6px;font-size:9px">Hapus</button></td></tr>`).join("");
+ document.getElementById('tabelStock').innerHTML=html;
+ // UPDATE DROPDOWN RESEP - FIX KODE TIDAK KELUAR
+ let rStockEl=document.getElementById('rStock');
+ if(rStockEl){
+  rStockEl.innerHTML=stockList.length===0?`<option>Belum ada stock - tambah di All Stock dulu</option>`:stockList.map(s=>`<option value="${s.id}">${s.kode||s.id} - ${s.nama} (${s.stok}${s.satuan}) - Rp${(s.hargaPerSatuan||0).toLocaleString('id-ID')}/${s.satuan}</option>`).join("");
+ }
+ document.getElementById('stockInfoResep').innerHTML=stockList.length===0?`⚠️ Belum ada stock. Tambah dulu di All Stock!`:`✅ Ada ${stockList.length} stock: ${stockList.map(s=>`${s.kode} ${s.nama}`).join(", ")}. Kode sudah keluar di dropdown bawah!`;
+}
+async function hapusStock(id){ if(!confirm("Hapus stock "+id+"?")) return; stockList=stockList.filter(s=>s.id!==id); saveLocal(); renderStock(); try{ const m=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"); await m.deleteDoc(window.fs.doc(window.db,"bahan_baku",id)); }catch(e){} }
+async function editStock(id){
+ let s=stockList.find(x=>x.id===id); if(!s) return;
+ let nb=prompt(`Edit stok ${s.kode} ${s.nama} (sekarang ${s.stok}${s.satuan}):`, s.stok); if(nb===null) return;
+ let nh=prompt(`Edit harga per ${s.satuan}:`, s.hargaPerSatuan); if(nh===null) return;
+ s.stok=parseFloat(nb)||0; s.hargaPerSatuan=parseFloat(nh)||0; saveLocal(); renderStock();
+ try{ await window.fs.updateDoc(window.fs.doc(window.db,"bahan_baku",id), {stok:s.stok, hargaPerSatuan:s.hargaPerSatuan}); }catch(e){}
+}
+
+// MENU & RESEP
+async function tambahMenu(){
+ let nama=document.getElementById('mNama').value.trim(); let harga=parseFloat(document.getElementById('mHarga').value)||0; let kat=document.getElementById('mKategori').value;
+ if(!nama) return alert("Isi nama menu!");
+ let obj={nama,harga,kategori:kat,createdAt:Date.now()};
+ menu=menu.filter(m=>m.id!==nama); menu.push({id:nama,...obj}); saveLocal(); renderKasir(); renderResep();
+ document.getElementById('mNama').value=""; document.getElementById('mHarga').value="";
+ try{ if(window.db) await window.fs.setDoc(window.fs.doc(window.db,"menu",nama), obj); alert("Menu "+nama+" masuk!"); }catch(e){}
+}
+function renderResep(){
+ let sel=document.getElementById('rMenu'); if(!sel) return;
+ sel.innerHTML=menu.length===0?`<option>Belum ada menu - tambah di atas</option>`:menu.map(m=>`<option value="${m.nama}">${m.nama} - Rp${m.harga.toLocaleString('id-ID')}</option>`).join("");
+ let cur=sel.value; let list=resepList.filter(r=>r.menuNama===cur);
+ document.getElementById('listResep').innerHTML=list.length===0?`<div style="font-size:11px;color:#999;padding:8px;background:#FFF3E0;border-radius:6px">Belum ada resep untuk ${cur||'menu ini'}. Pilih stock kode di atas (contoh 01 Mie pakai 100 gram)</div>`:
+ list.map(r=>{
+  let st=stockList.find(s=>s.id===r.stockId);
+  return `<div style="display:flex;justify-content:space-between;font-size:11px;padding:6px;border-bottom:1px dashed #ddd;background:white;border-radius:4px;margin:2px 0"><span><b>${r.stockKode||r.stockId}</b> ${st?st.nama:r.stockId} : <b>${r.qtyPakai}${r.satuanPakai}</b></span><button onclick="hapusResep('${r.id}')" style="background:#c0392b;color:white;border:none;border-radius:3px;padding:2px 8px">Hapus</button></div>`;
+ }).join("") + (cur?`<div style="margin-top:8px;display:flex;gap:5px"><button onclick="hapusMenu('${cur}')" style="background:#c0392b;color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px">🗑️ Hapus Menu ${cur}</button><button onclick="editMenu('${cur}')" style="background:#FF9800;color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px">✏️ Edit Harga</button></div>`:"");
+ let totalHPP=list.reduce((t,r)=>{ let st=stockList.find(s=>s.id===r.stockId); if(!st) return t; let qKg=toKg(r.qtyPakai,r.satuanPakai); let qPcs=toPcs(r.qtyPakai,r.satuanPakai); if(st.satuan==="kg"||st.satuan==="liter") return t+qKg*st.hargaPerSatuan; if(st.satuan==="pcs") return t+qPcs*st.hargaPerSatuan; return t; },0);
+ let mObj=menu.find(m=>m.nama===cur); document.getElementById('infoHPP').innerHTML=cur?`HPP <b>${cur}</b>: Rp${totalHPP.toLocaleString('id-ID')} | Jual Rp${mObj?mObj.harga.toLocaleString('id-ID'):0} | <b style="color:${mObj&&mObj.harga>totalHPP?'green':'red'}">Laba Rp${mObj?(mObj.harga-totalHPP).toLocaleString('id-ID'):0}</b> | Stock terpakai: ${list.map(r=>`${r.stockKode} ${r.qtyPakai}${r.satuanPakai}`).join(", ")}`:"";
+}
+async function tambahResep(){
+ let menuNama=document.getElementById('rMenu').value; let stockId=document.getElementById('rStock').value; let qty=parseFloat(document.getElementById('rQty').value)||0; let satuanPakai=document.getElementById('rSatuanPakai').value;
+ if(!menuNama||!stockId||qty<=0){ alert("Pilih Menu, Stock (kode), dan isi qty! Kalau dropdown stock kosong, tambah stock dulu di Tab All Stock!"); return; }
+ let st=stockList.find(s=>s.id===stockId);
+ let obj={menuNama,stockId,stockKode:st?st.kode:stockId,qtyPakai:qty,satuanPakai,createdAt:Date.now(),id:"R"+Date.now()};
+ resepList.push(obj); saveLocal(); renderResep();
+ document.getElementById('rQty').value="";
+ try{ if(window.db) await window.fs.addDoc(window.fs.collection(window.db,"resep"), {menuNama,stockId,stockKode:st?st.kode:stockId,qtyPakai:qty,satuanPakai,createdAt:Date.now()}); }catch(e){}
+ alert(`✅ Resep ${menuNama} = ${st?st.kode:stockId} ${qty}${satuanPakai} masuk!`);
+}
+async function hapusResep(id){ if(!confirm("Hapus resep?")) return; resepList=resepList.filter(r=>r.id!==id); saveLocal(); renderResep(); try{ const m=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"); await m.deleteDoc(window.fs.doc(window.db,"resep",id)); }catch(e){} }
+async function hapusMenu(nama){ if(!confirm("Hapus menu "+nama+"?")) return; menu=menu.filter(m=>m.id!==nama); resepList=resepList.filter(r=>r.menuNama!==nama); saveLocal(); renderKasir(); renderResep(); try{ const m=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"); await m.deleteDoc(window.fs.doc(window.db,"menu",nama)); }catch(e){} }
+async function editMenu(nama){ let m=menu.find(x=>x.nama===nama); if(!m) return; let nh=prompt("Harga baru "+nama+":", m.harga); if(nh===null) return; m.harga=parseFloat(nh)||0; saveLocal(); renderKasir(); renderResep(); try{ await window.fs.updateDoc(window.fs.doc(window.db,"menu",nama), {harga:m.harga}); }catch(e){} }
+
+// KASIR
+function renderKasir(){
+ let cari=(document.getElementById('cariMenu').value||"").toLowerCase();
+ let filtered=menu.filter(m=>m.nama.toLowerCase().includes(cari));
+ let grid=document.getElementById('menuGrid');
+ if(menu.length===0){ grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;color:#999;padding:20px;background:white;border-radius:10px">Belum ada menu.<br>Login ADMIN (kode 1212) -> Tab Resep/Menu -> Tambah Menu dulu bung!</div>`; document.getElementById('menuCount').innerText="0 Menu"; return; }
+ if(filtered.length===0){ grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;color:#999;padding:20px">Tidak ada menu untuk "${cari}"</div>`; return; }
+ grid.innerHTML=filtered.map(m=>{
+  let hpp=resepList.filter(r=>r.menuNama===m.nama).reduce((t,r)=>{ let st=stockList.find(s=>s.id===r.stockId); if(!st) return t; let qKg=toKg(r.qtyPakai,r.satuanPakai); return t+qKg*st.hargaPerSatuan; },0);
+  return `<div class="menu-card" onclick="addCart('${m.id}')"><div style="font-size:22px">🍜</div><b style="font-size:11px">${m.nama}</b><br><small style="color:#E53935;font-weight:bold">Rp${m.harga.toLocaleString('id-ID')}</small>${role==="admin"?`<br><small style="font-size:8px;color:#999">HPP Rp${hpp.toLocaleString('id-ID')}</small>`:""}<br><small style="font-size:8px;color:#999">${m.kategori||""}</small></div>`;
+ }).join("");
+ document.getElementById('menuCount').innerText=`${filtered.length} dari ${menu.length} Menu | Stock: ${stockList.length} kode | Mode: ${role.toUpperCase()}`;
+}
+function addCart(id){ let m=menu.find(x=>x.id===id); if(!m) return; let ex=keranjang.find(k=>k.id===id); if(ex) ex.qty++; else keranjang.push({...m,qty:1}); renderCart(); }
+function renderCart(){
+ if(keranjang.length===0){ document.getElementById('listKeranjang').innerHTML=`<div style="text-align:center;color:#999;padding:20px;font-size:11px">Kosong - Tap menu kiri</div>`; }
+ else {
+  document.getElementById('listKeranjang').innerHTML=keranjang.map((k,i)=>`<div style="display:flex;justify-content:space-between;padding:6px;border-bottom:1px dashed #eee;font-size:11px"><span><b>${k.nama}</b> x${k.qty}</span><span><button onclick="chgQty(${i},-1)">-</button> ${k.qty} <button onclick="chgQty(${i},1)">+</button> <button onclick="delCart(${i})" style="color:red">x</button> | Rp${(k.harga*k.qty).toLocaleString('id-ID')}</span></div>`).join("");
+ }
+ let sub=keranjang.reduce((t,k)=>t+k.harga*k.qty,0); total=sub; document.getElementById('sub').innerText=sub.toLocaleString('id-ID'); document.getElementById('total').innerText=sub.toLocaleString('id-ID'); checkStock();
+}
+function chgQty(i,d){ keranjang[i].qty+=d; if(keranjang[i].qty<=0) keranjang.splice(i,1); renderCart(); }
+function delCart(i){ keranjang.splice(i,1); renderCart(); }
+function hitungKembali(){ let b=parseInt(document.getElementById('bayar').value)||0; document.getElementById('kembali').innerText=(b-total).toLocaleString('id-ID'); }
+function checkStock(){
+ let warn=[]; keranjang.forEach(k=>{
+  resepList.filter(r=>r.menuNama===k.nama).forEach(r=>{
+   let st=stockList.find(s=>s.id===r.stockId); if(!st) return;
+   let needKg=toKg(r.qtyPakai*k.qty, r.satuanPakai); let needPcs=toPcs(r.qtyPakai*k.qty, r.satuanPakai);
+   if((st.satuan==="kg"||st.satuan==="liter") && st.stok < needKg) warn.push(`${st.kode} ${st.nama} sisa ${st.stok}${st.satuan} butuh ${needKg.toFixed(3)}`);
+   if(st.satuan==="pcs" && st.stok < needPcs) warn.push(`${st.kode} ${st.nama} sisa ${st.stok}pcs butuh ${needPcs}pcs`);
+  });
+ });
+ let el=document.getElementById('warnStock'); if(warn.length){ el.style.display="block"; el.innerHTML="⚠️ Stock tipis: "+warn.join(", "); } else el.style.display="none";
+}
+let lastStruk="";
+function makeStruk(data){
+ let s=`BEBAS HAMBATAN\n${data.cabang}\nKasir: ${data.namaKasir}\n${new Date().toLocaleString('id-ID')}\n----------------\n`;
+ data.items.forEach(k=>{ s+=`${k.nama} x${k.qty} Rp${(k.harga*k.qty).toLocaleString('id-ID')}\n`; });
+ s+=`----------------\nTOTAL Rp${data.total.toLocaleString('id-ID')}\nBayar Rp${data.bayar.toLocaleString('id-ID')}\nKembali Rp${data.kembalian.toLocaleString('id-ID')}\n----------------\nTerima Kasih\n`; lastStruk=s; return s;
+}
+async function bayar(){
+ if(keranjang.length===0) return alert("Keranjang kosong!");
+ let bayarVal=parseInt(document.getElementById('bayar').value)||0; if(bayarVal<total) return alert("Uang kurang!");
+ let totalHPP=keranjang.reduce((t,k)=>{
+  let rlist=resepList.filter(r=>r.menuNama===k.nama);
+  let hpp=rlist.reduce((a,r)=>{ let st=stockList.find(s=>s.id===r.stockId); if(!st) return a; let qKg=toKg(r.qtyPakai,r.satuanPakai); let qPcs=toPcs(r.qtyPakai,r.satuanPakai); if(st.satuan==="kg"||st.satuan==="liter") return a+qKg*st.hargaPerSatuan; if(st.satuan==="pcs") return a+qPcs*st.hargaPerSatuan; return a; },0);
+  return t+hpp*k.qty;
+ },0);
+ let data={tanggal:new Date().toISOString(),cabang, namaKasir:kasir, pelanggan:document.getElementById('pelanggan').value||"Umum", total, bayar:bayarVal, kembalian:bayarVal-total, items:keranjang.map(k=>({nama:k.nama,qty:k.qty,harga:k.harga})), totalHPP, createdAt:Date.now()};
+ makeStruk(data);
+ try{
+  if(window.db) await window.fs.addDoc(window.fs.collection(window.db,"penjualan"), data);
+  // POTONG STOCK - FIX
+  for(let k of keranjang){
+   let rlist=resepList.filter(r=>r.menuNama===k.nama);
+   for(let r of rlist){
+    let st=stockList.find(s=>s.id===r.stockId); if(!st) continue;
+    let needKg=toKg(r.qtyPakai*k.qty, r.satuanPakai); let needPcs=toPcs(r.qtyPakai*k.qty, r.satuanPakai);
+    // update local first
+    if((st.satuan==="kg"||st.satuan==="liter") && needKg>0) st.stok-=needKg;
+    if(st.satuan==="pcs" && needPcs>0) st.stok-=needPcs;
+    saveLocal();
+    // firebase
+    try{
+     if((st.satuan==="kg"||st.satuan==="liter") && needKg>0 && window.db) await window.fs.updateDoc(window.fs.doc(window.db,"bahan_baku",st.id), {stok: window.fs.increment(-needKg)});
+     if(st.satuan==="pcs" && needPcs>0 && window.db) await window.fs.updateDoc(window.fs.doc(window.db,"bahan_baku",st.id), {stok: window.fs.increment(-needPcs)});
+    }catch(e){ console.log(e); }
+   }
+  }
+  renderStock(); alert(role==="admin"?`SUKSES! Laba Rp${(total-totalHPP).toLocaleString('id-ID')} - Stock kepotong gram/pcs`:`SUKSES! Total Rp${total.toLocaleString('id-ID')}`);
+  keranjang=[]; document.getElementById('bayar').value=""; renderCart();
+ }catch(e){ alert(e.message); }
+}
+function printStruk(){ if(!lastStruk) return alert("Bayar dulu!"); let w=window.open("","","width=300,height=500"); w.document.write(`<pre style="font-family:monospace;font-size:12px">${lastStruk}</pre>`); w.document.close(); w.print(); }
+
+// LAPORAN
+async function loadLaporan(){
+ try{
+  let snap=await window.fs.getDocs(window.fs.query(window.fs.collection(window.db,"penjualan"), window.fs.orderBy("createdAt","desc")));
+  let jual=snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(jual.length===0){ // coba local
+   try{ jual=JSON.parse(localStorage.getItem('kbh_jual')||'[]'); }catch(e){}
+  }
+  let tot=jual.reduce((t,r)=>t+r.total,0); let totHPP=jual.reduce((t,r)=>t+(r.totalHPP||0),0);
+  document.getElementById('ringkasan').innerHTML=`Transaksi: ${jual.length} | Omset Rp${tot.toLocaleString('id-ID')} | HPP Rp${totHPP.toLocaleString('id-ID')} | <b style="color:green">Laba Rp${(tot-totHPP).toLocaleString('id-ID')}</b>`;
+  document.getElementById('tabelLaporanStock').innerHTML=`<tr><th>Kode</th><th>Nama</th><th>Sisa</th><th>Harga</th><th>Aksi</th></tr>`+stockList.map(s=>`<tr><td><b>${s.kode}</b></td><td>${s.nama}</td><td>${Number(s.stok).toFixed(3)} ${s.satuan}</td><td>Rp${(s.hargaPerSatuan||0).toLocaleString('id-ID')}</td><td><button onclick="editStock('${s.id}')" style="font-size:9px">Edit</button> <button onclick="hapusStock('${s.id}')" style="font-size:9px">Hapus</button></td></tr>`).join("");
+  document.getElementById('tabelLaporanJual').innerHTML=`<tr><th>Tgl</th><th>Cabang</th><th>Total</th><th>HPP</th><th>Laba</th><th>Hapus</th></tr>`+jual.slice(0,100).map(r=>`<tr><td>${new Date(r.tanggal).toLocaleString('id-ID')}</td><td>${r.cabang}</td><td>Rp${r.total.toLocaleString('id-ID')}</td><td>Rp${(r.totalHPP||0).toLocaleString('id-ID')}</td><td>Rp${(r.total-(r.totalHPP||0)).toLocaleString('id-ID')}</td><td><button onclick="hapusJual('${r.id}')" style="background:#c0392b;color:white;border:none;border-radius:3px;padding:3px 6px;font-size:9px">Hapus</button></td></tr>`).join("");
+ }catch(e){ document.getElementById('ringkasan').innerHTML=e.message; }
+}
+async function hapusJual(id){ if(!confirm("Hapus transaksi? Stock tidak balik otomatis, edit manual di All Stock!")) return; try{ const m=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"); await m.deleteDoc(window.fs.doc(window.db,"penjualan",id)); loadLaporan(); }catch(e){} }
+function logout(){ if(confirm("Logout?")){ localStorage.removeItem('kbh_role'); location.reload(); } }
+let sr=localStorage.getItem('kbh_role'); if(sr){ role=sr; cabang=localStorage.getItem('kbh_cabang')||"Cabang"; kasir=localStorage.getItem('kbh_kasir')||"Kasir"; document.getElementById('login').classList.remove('active'); init(); }
+</script>
+</body></html>
