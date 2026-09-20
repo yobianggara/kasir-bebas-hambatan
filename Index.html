@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Dapur Moro Kuto - RPP02N Beres</title><style>
+*{box-sizing:border-box;font-family:'Segoe UI',Arial;margin:0;padding:0}body{background:#fef2f2}
+.header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20;color:white;background:#B71C1C}
+.nav button{padding:6px 12px;border:none;border-radius:8px;font-size:11px;margin-left:4px;font-weight:bold;cursor:pointer;background:white;color:#B71C1C}
+.tab{display:none;padding:10px}.tab.active{display:block}
+.card{background:white;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-weight:bold;color:white;margin-top:6px;cursor:pointer;font-size:13px}
+.btn-red{background:#D32F2F}.btn-dark{background:#212121}.btn-blue{background:#1565C0}.btn-orange{background:#EF6C00}.btn-green{background:#2E7D32}
+input,select{width:100%;padding:10px;margin:4px 0;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;background:white}
+.tabel{width:100%;font-size:11px;border-collapse:collapse;background:white}.tabel th,.tabel td{border:1px solid #eee;padding:7px;text-align:left}
+.cat-chip{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:bold;border:1px solid #ddd;background:white;cursor:pointer;margin:2px;display:inline-block}
+.cat-chip.active{background:#D32F2F;color:white;border-color:#D32F2F}
+.kasir-layout{display:flex;gap:10px;height:calc(100vh - 70px)} .left{flex:1;background:white;border-radius:12px;overflow:auto;padding:12px} .right{width:360px;background:white;border-radius:12px;display:flex;flex-direction:column}
+@media(max-width:900px){.kasir-layout{flex-direction:column;height:auto}.right{width:100%}}
+.menu-card{border:2px solid #222;border-radius:12px;padding:10px;text-align:left;cursor:pointer;background:#fff;min-height:90px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 0 0 1px #000}
+.price{color:#D32F2F;font-weight:bold;font-size:13px;margin-top:4px}
+.badge{padding:3px 8px;border-radius:10px;font-size:10px;font-weight:bold;background:white;color:#D32F2F}
+.print-box{background:#E8F5E9;border:2px solid #4CAF50;border-radius:10px;padding:10px;margin-top:8px}
+.debug{font-size:10px;background:white;padding:6px;border-radius:6px;margin-top:6px}
+</style></head><body>
+<div id="header" class="header"><span>🍜 DAPUR MORO KUTO <small id="infoC" class="badge">-</small></span><div class="nav"><button onclick="showTab('kasir')">Kasir</button><button id="navMenu" onclick="showTab('menuAdmin')">Menu</button><button id="navLap" onclick="showTab('laporan')">Laporan</button><button onclick="logout()" style="background:#000;color:white">Keluar</button></div></div>
+
+<div id="login" class="tab active"><div class="card" style="max-width:400px;margin:30px auto;text-align:center"><h2 style="color:#B71C1C">DAPUR MORO KUTO</h2><p style="font-size:11px;color:#666">Terminal Wisata Makuthoromo</p><select id="role"><option value="cabang">Kasir Cabang</option><option value="admin">Admin Pusat</option></select><div id="pinBox" style="display:none"><input id="pin" type="password" placeholder="Kode Admin"></div><input id="namaKasir" placeholder="Nama Kasir"><input id="namaCabang" placeholder="Nama Cabang"><button class="btn btn-red" onclick="doLogin()">Masuk</button><div id="loginStatus" style="font-size:10px;color:#c0392b;margin-top:6px"></div></div></div>
+
+<div id="kasir" class="tab"><div class="kasir-layout"><div class="left"><div style="display:flex;gap:8px;margin-bottom:10px"><input id="cariMenu" placeholder="Cari menu..." oninput="renderKasir()" style="flex:1"><input id="pelanggan" placeholder="Meja / Pelanggan" style="max-width:130px"></div><div id="catFilter" style="margin-bottom:10px"></div><div id="menuGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;background:#000;padding:8px;border-radius:10px"></div></div><div class="right"><div style="padding:12px;border-bottom:1px solid #eee;display:flex;justify-content:space-between"><b>Pesanan</b><small id="cabangLabel" style="font-size:10px"></small></div><div id="listKeranjang" style="flex:1;overflow:auto;padding:8px;font-size:12px"></div><div style="padding:12px;border-top:2px solid #D32F2F;background:#fff8f0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>Subtotal</span><span>Rp<span id="sub">0</span></span></div><div style="display:flex;justify-content:space-between;font-weight:bold;font-size:20px;color:#D32F2F"><span>Total</span><span>Rp<span id="total">0</span></span></div><input id="bayar" type="number" placeholder="Uang Bayar" oninput="hitungKembali()" style="background:#fff3cd;margin-top:8px"><div style="font-size:12px;margin:4px 0">Kembali: <b>Rp<span id="kembali">0</span></b></div><button class="btn btn-red" onclick="bayar()" style="padding:16px;font-size:16px">Bayar & Print Otomatis</button>
+<div id="printStatus" style="display:none"></div>
+</div></div></div></div>
+
+<div id="menuAdmin" class="tab"><div class="card"><h4>Menu Dapur Moro Kuto - Total: <span id="totalMenu">0</span></h4><div style="display:grid;grid-template-columns:1fr 120px 140px;gap:6px"><input id="mNama" placeholder="Nama Menu"><input id="mHarga" type="number" placeholder="Harga"><select id="mKategori"><option>Mie Ayam Bakar Layah</option><option>Nasi Goreng</option><option>Ayam Laris</option><option>Bakmi Jawa</option><option>Pisang Gembol</option><option>Pisang Nugget</option><option>Tempe Mendoan</option><option>Pangsit Bakso</option><option>Ceker Ayam</option><option>Minuman</option><option>Smoothies</option><option>Paket Hemat</option></select></div><button class="btn btn-red" onclick="tambahMenu()">Tambah Menu</button><button class="btn btn-blue" onclick="restoreDefault()">Kembalikan 105 Menu Default</button></div><div class="card"><table class="tabel" id="tabelMenu"></table></div></div>
+
+<div id="laporan" class="tab"><div class="card"><h4>Laporan Penjualan</h4><div id="ringkasan" style="font-size:12px;margin-top:10px;background:#e8f5e9;padding:10px;border-radius:8px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px"><button class="btn btn-orange" onclick="hapusTransaksiSample()">Bersihkan Laporan - Hapus Sample</button><button class="btn btn-dark" onclick="bersihkanLocal()">Bersihkan Cache (Fix Menu Hilang)</button></div></div><div class="card"><div style="overflow:auto;max-height:70vh"><table class="tabel" id="tabelLaporan"></table></div></div>
+<div id="detailHarian" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:100;overflow:auto"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, addDoc, getDocs, query, orderBy, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig = { apiKey: "AIzaSyByZ6nSKWhx2B8RfjAvTsyuAuv1XMcVq4I", authDomain: "kasir-bebas-hambatan.firebaseapp.com", projectId: "kasir-bebas-hambatan", storageBucket: "kasir-bebas-hambatan.firebasestorage.app", messagingSenderId: "283163883169", appId: "1:283163883169:web:6d68605a811ecdceb762e0" };
+const app = initializeApp(firebaseConfig); const db = getFirestore(app); window.db=db; window.fs={collection,doc,setDoc,addDoc,getDocs,query,orderBy,onSnapshot,deleteDoc};
+</script>
+<script>
+let menu=[], keranjang=[], role="", cabang="", kasir="", total=0, activeCat="Semua", bluetoothDevice=null, bluetoothChar=null, lastStruk="";
+const defaultMenu=[
+ {nama:"Mie Ayam Bakar Layah Biasa", harga:10000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Ceker", harga:12000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Keju", harga:15000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Pangsit isi Bakso", harga:15000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Bakso Kecil", harga:15000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Bakso Besar", harga:23000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Telur Ceplok", harga:15000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Ceker + Bakso", harga:17000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Ceker + Keju", harga:17000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Ceker + Pangsit isi Bakso", harga:17000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Ceker + Telur Ceplok", harga:17000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Bakso + Keju", harga:18000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Bakso + Telur Ceplok", harga:18000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Bakso + Pangsit isi Bakso", harga:18000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Telur Ceplok + Keju", harga:18000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Pangsit isi Bakso + Keju", harga:18000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Ekstra Ayam", harga:14000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Mix Topping", harga:23000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Mie Ayam Bakar Layah Original Tidak Pedas", harga:12000, kategori:"Mie Ayam Bakar Layah"},
+ {nama:"Nasi Goreng Arab", harga:12000, kategori:"Nasi Goreng"},
+ {nama:"Nasi Goreng Jawa", harga:10000, kategori:"Nasi Goreng"},
+ {nama:"Nasi Goreng Jakarta", harga:13000, kategori:"Nasi Goreng"},
+ {nama:"Nasi Goreng Jogja", harga:13000, kategori:"Nasi Goreng"},
+ {nama:"Nasi Goreng Kremes", harga:12000, kategori:"Nasi Goreng"},
+ {nama:"Nasi Goreng Arab + Ayam Geprek", harga:20000, kategori:"Nasi Goreng"},
+ {nama:"Nasi Goreng Jawa + Ayam Geprek", harga:20000, kategori:"Nasi Goreng"},
+ {nama:"Nasi + Telur Ceplok", harga:10000, kategori:"Nasi Goreng"},
+ {nama:"Nasi + Telur Dadar", harga:10000, kategori:"Nasi Goreng"},
+ {nama:"Nasi + Telur Puyuh", harga:19000, kategori:"Nasi Goreng"},
+ {nama:"Ayam Geprek + Nasi", harga:12000, kategori:"Ayam Laris"},
+ {nama:"Ayam Geprek Keju + Nasi", harga:15000, kategori:"Ayam Laris"},
+ {nama:"Ayam Geprek Sambal Bakar + Nasi", harga:17000, kategori:"Ayam Laris"},
+ {nama:"Ayam Geprek Bakar + Nasi", harga:17000, kategori:"Ayam Laris"},
+ {nama:"Ayam Geprek Mozarella + Nasi", harga:19000, kategori:"Ayam Laris"},
+ {nama:"Ayam Goreng Kremes + Nasi", harga:23000, kategori:"Ayam Laris"},
+ {nama:"Ayam Sambal Bakar + Nasi", harga:23000, kategori:"Ayam Laris"},
+ {nama:"Ayam Bakar Layah + Nasi", harga:23000, kategori:"Ayam Laris"},
+ {nama:"Ayam Bakar Taliwang + Nasi", harga:23000, kategori:"Ayam Laris"},
+ {nama:"Ayam Bakar Madu Wijen + Nasi", harga:25000, kategori:"Ayam Laris"},
+ {nama:"Ayam Bakar Kremes + Nasi", harga:23000, kategori:"Ayam Laris"},
+ {nama:"Paket Ayam Sambel Bakar", harga:30000, kategori:"Ayam Laris"},
+ {nama:"Bakmi Jawa Rebus", harga:12000, kategori:"Bakmi Jawa"},
+ {nama:"Bakmi Jawa Goreng", harga:12000, kategori:"Bakmi Jawa"},
+ {nama:"Bakmi Geprek", harga:20000, kategori:"Bakmi Jawa"},
+ {nama:"Pisang Gembol Original", harga:10000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Cokelat", harga:10000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Cokelat Keju Promo", harga:12000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Keju", harga:10000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Wijen", harga:12000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Susu Keju", harga:12000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Cokelat Wijen", harga:13000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Wijen Keju", harga:13000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Taro", harga:12000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Strawberry", harga:12000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Tiramisu", harga:12000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Dark Chocolate", harga:12000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Mix Rasa", harga:15000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Gembol Rainbow", harga:15000, kategori:"Pisang Gembol"},
+ {nama:"Pisang Nugget Original", harga:10000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Cokelat", harga:12000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Keju", harga:12000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Cokelat Keju", harga:13000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Susu Keju", harga:13000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Strawberry Taro", harga:13000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Strawberry Cokelat", harga:13000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Cokelat Tiramisu", harga:13000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Tiramisu Susu", harga:13000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Green Tea Strawberry", harga:13000, kategori:"Pisang Nugget"},
+ {nama:"Pisang Nugget Cokelat Green Tea", harga:13000, kategori:"Pisang Nugget"},
+ {nama:"Mendoan Original", harga:10000, kategori:"Tempe Mendoan"},
+ {nama:"Mendoan Pedas", harga:12000, kategori:"Tempe Mendoan"},
+ {nama:"Pangsit Goreng", harga:15000, kategori:"Pangsit Bakso"},
+ {nama:"Pangsit Kuah Original", harga:12000, kategori:"Pangsit Bakso"},
+ {nama:"Pangsit Kuah Chili Oil", harga:12000, kategori:"Pangsit Bakso"},
+ {nama:"Ceker Mercon isi 5", harga:10000, kategori:"Ceker Ayam"},
+ {nama:"Ekstra Ceker", harga:2000, kategori:"Ceker Ayam"},
+ {nama:"Ekstra Pangsit", harga:3000, kategori:"Ceker Ayam"},
+ {nama:"Ekstra Bakso", harga:4000, kategori:"Ceker Ayam"},
+ {nama:"Blue Cinta", harga:7000, kategori:"Minuman"},
+ {nama:"Tarlove", harga:7000, kategori:"Minuman"},
+ {nama:"Cappucinta", harga:7000, kategori:"Minuman"},
+ {nama:"Greenlove", harga:7000, kategori:"Minuman"},
+ {nama:"Chocosun", harga:7000, kategori:"Minuman"},
+ {nama:"Strawberrykiss", harga:7000, kategori:"Minuman"},
+ {nama:"Es Demi Cinta", harga:7000, kategori:"Minuman"},
+ {nama:"Es Ketemu Mantan", harga:7000, kategori:"Minuman"},
+ {nama:"Es Pacar Bayangan", harga:7000, kategori:"Minuman"},
+ {nama:"Es Rumput Tetangga", harga:7000, kategori:"Minuman"},
+ {nama:"Es Jellyper", harga:10000, kategori:"Minuman"},
+ {nama:"Es Pelangi Dimatamu", harga:10000, kategori:"Minuman"},
+ {nama:"Es Teh Moro Kuto Jumbo", harga:5000, kategori:"Minuman"},
+ {nama:"Es Coklat Moro Kuto Jumbo", harga:10000, kategori:"Minuman"},
+ {nama:"Teh Tarik Moro Kuto Jumbo", harga:7000, kategori:"Minuman"},
+ {nama:"Kopi Susu Moro Kuto Jumbo", harga:7000, kategori:"Minuman"},
+ {nama:"Smoothies Cokelat", harga:10000, kategori:"Smoothies"},
+ {nama:"Smoothies Matcha", harga:10000, kategori:"Smoothies"},
+ {nama:"Smoothies Vanila", harga:10000, kategori:"Smoothies"},
+ {nama:"Smoothies Strawberry", harga:10000, kategori:"Smoothies"},
+ {nama:"Smoothies Blueberry", harga:10000, kategori:"Smoothies"},
+ {nama:"Smoothies Taro", harga:10000, kategori:"Smoothies"},
+ {nama:"Paket 1 Kongkow Seru", harga:49000, kategori:"Paket Hemat"},
+ {nama:"Paket 2 Kongkow Seru", harga:99000, kategori:"Paket Hemat"},
+ {nama:"Paket 3 Kongkow Seru", harga:99000, kategori:"Paket Hemat"},
+ {nama:"Paket 4 Kongkow Seru", harga:155000, kategori:"Paket Hemat"}
+];
+
+document.getElementById('role').addEventListener('change',function(){document.getElementById('pinBox').style.display=this.value==='admin'?'block':'none';});
+function showTab(id){
+  if(role!=="admin" && ["menuAdmin","laporan"].includes(id)) return;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==="laporan") loadLaporan();
+  if(id==="menuAdmin") renderMenuAdmin();
+  if(id==="kasir") renderKasir();
+}
+function doLogin(){
+  let r=document.getElementById('role').value;
+  let pin=document.getElementById('pin').value.trim();
+  if(r==="admin" && pin!=="112234"){document.getElementById('loginStatus').innerText="Kode salah! 112234"; return;}
+  role=r; cabang=document.getElementById('namaCabang').value.trim()||"Cabang"; kasir=document.getElementById('namaKasir').value.trim()||"Kasir";
+  localStorage.setItem('kbh_role',r); localStorage.setItem('kbh_cabang',cabang); localStorage.setItem('kbh_kasir',kasir);
+  document.getElementById('login').classList.remove('active'); init();
+}
+async function init(){
+  document.getElementById('header').className=role==="admin"?'header admin':'header';
+  document.getElementById('infoC').innerText=cabang;
+  document.getElementById('navMenu').style.display=role==="admin"?'inline-block':'none';
+  document.getElementById('navLap').style.display=role==="admin"?'inline-block':'none';
+  document.getElementById('cabangLabel').innerText=cabang;
+  await loadMenuFixed();
+  renderCat(); renderKasir(); setupRTFixed(); showTab('kasir');
+}
+async function loadMenuFixed(){
+  try{
+    let local=JSON.parse(localStorage.getItem('kbh_menu_final_v2')||'[]');
+    if(local && local.length>=10){ menu=local; }
+    else { menu=defaultMenu.map(m=>({id:m.nama, ...m})); localStorage.setItem('kbh_menu_final_v2', JSON.stringify(menu)); }
+  }catch(e){ menu=defaultMenu.map(m=>({id:m.nama, ...m})); }
+  if(window.db){
+    try{
+      let snap=await window.fs.getDocs(window.fs.collection(window.db,"menu"));
+      if(snap.docs.length>=10){ menu=snap.docs.map(d=>({id:d.id,...d.data()})); localStorage.setItem('kbh_menu_final_v2', JSON.stringify(menu)); }
+      else if(snap.docs.length===0){ for(let m of defaultMenu){ try{ await window.fs.setDoc(window.fs.doc(window.db,"menu",m.nama), m); }catch(e){} } }
+    }catch(e){}
+  }
+}
+function setupRTFixed(){
+  if(!window.db) return;
+  window.fs.onSnapshot(window.fs.collection(window.db,"menu"), s=>{
+    let remote=s.docs.map(d=>({id:d.id,...d.data()}));
+    if(remote.length===0) return;
+    if(remote.length < 10) return;
+    menu=remote;
+    localStorage.setItem('kbh_menu_final_v2', JSON.stringify(menu));
+    renderKasir(); renderMenuAdmin(); renderCat();
+  });
+}
+function renderCat(){
+ let cats=["Semua", ...new Set(menu.map(m=>m.kategori))];
+ document.getElementById('catFilter').innerHTML=cats.map(c=>`<span class="cat-chip ${activeCat===c?'active':''}" onclick="setCat('${c}')">${c}</span>`).join("");
+ document.getElementById('totalMenu').innerText=menu.length;
+}
+function setCat(c){ activeCat=c; renderCat(); renderKasir(); }
+function renderKasir(){
+ let cari=(document.getElementById('cariMenu').value||"").toLowerCase();
+ let filtered=menu.filter(m=>{
+  let matchCat=activeCat==="Semua"||m.kategori===activeCat;
+  let matchSearch=m.nama.toLowerCase().includes(cari);
+  return matchCat && matchSearch;
+ });
+ let grid=document.getElementById('menuGrid');
+ if(filtered.length===0){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#999;padding:20px;background:white;border-radius:10px">Tidak ada menu</div>'; return; }
+ grid.innerHTML=filtered.map(m=>'<div class="menu-card" onclick="addCart(\''+m.id.replace(/\'/g,"\\'")+'\')"><div><b>'+m.nama+'</b><br><small>'+m.kategori+'</small></div><div class="price">Rp'+m.harga.toLocaleString('id-ID')+'</div></div>').join("");
+}
+function addCart(id){ let m=menu.find(x=>x.id===id); if(!m) return; let ex=keranjang.find(k=>k.id===id); if(ex) ex.qty++; else keranjang.push({...m,qty:1}); renderCart(); }
+function renderCart(){
+ if(keranjang.length===0){ document.getElementById('listKeranjang').innerHTML='<div style="text-align:center;color:#999;padding:20px">Kosong</div>'; }
+ else { document.getElementById('listKeranjang').innerHTML=keranjang.map((k,i)=>'<div style="display:flex;justify-content:space-between;padding:7px;border-bottom:1px dashed #eee"><span><b>'+k.nama+'</b> x'+k.qty+'</span><span><button onclick="chgQty('+i+',-1)">-</button> '+k.qty+' <button onclick="chgQty('+i+',1)">+</button> <button onclick="delCart('+i+')" style="color:red">x</button> | Rp'+(k.harga*k.qty).toLocaleString('id-ID')+'</span></div>').join(""); }
+ let sub=keranjang.reduce((t,k)=>t+k.harga*k.qty,0); total=sub; document.getElementById('sub').innerText=sub.toLocaleString('id-ID'); document.getElementById('total').innerText=sub.toLocaleString('id-ID'); hitungKembali();
+}
+function chgQty(i,d){ keranjang[i].qty+=d; if(keranjang[i].qty<=0) keranjang.splice(i,1); renderCart(); }
+function delCart(i){ keranjang.splice(i,1); renderCart(); }
+function hitungKembali(){ let b=parseInt(document.getElementById('bayar').value)||0; document.getElementById('kembali').innerText=(b-total).toLocaleString('id-ID'); }
+function buatStruk(data){
+ let tgl = new Date().toLocaleString('id-ID', {weekday:'long', day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+ let s = "       DAPUR MORO KUTO\n    Terminal Wisata Makuthoromo\n------------------------------\n"+tgl+"\nCabang: "+data.cabang+"\nKasir: "+data.namaKasir+"\nMeja: "+data.pelanggan+"\n------------------------------\n";
+ data.items.forEach(k=>{
+  let line=k.nama;
+  if(line.length>32) line=line.substring(0,32);
+  s+=line+"\n  "+k.qty+" x "+k.harga.toLocaleString('id-ID')+" = "+(k.harga*k.qty).toLocaleString('id-ID')+"\n";
+ });
+ s+="------------------------------\nTotal: Rp"+data.total.toLocaleString('id-ID')+"\nBayar: Rp"+data.bayar.toLocaleString('id-ID')+"\nKembali: Rp"+data.kembalian.toLocaleString('id-ID')+"\n------------------------------\n Terima Kasih\n Ditunggu kedatangannya kembali\n 0821 3595 0906\n------------------------------\n";
+ lastStruk=s;
+ return s;
+}
+async function bayar(){
+ if(keranjang.length==0) return alert("Kosong!"); let bayarVal=parseInt(document.getElementById('bayar').value)||0; if(bayarVal<total) return alert("Uang kurang!");
+ let data={tanggal:new Date().toISOString(),cabang,namaKasir:kasir,pelanggan:document.getElementById('pelanggan').value||"Umum",total,bayar:bayarVal,kembalian:bayarVal-total,items:keranjang.map(k=>({nama:k.nama,qty:k.qty,harga:k.harga})),createdAt:Date.now()};
+ buatStruk(data);
+ try{ if(window.db) await window.fs.addDoc(window.fs.collection(window.db,"penjualan"), data); }catch(e){}
+ keranjang=[]; document.getElementById('bayar').value=""; document.getElementById('pelanggan').value=""; renderCart();
+ setTimeout(()=>{ printBluetoothRPP02N(); }, 700);
+}
+
+// SISTEM PRINT BERHASIL TADI - RPP02N BLUETOOTH FIX
+async function printBluetoothRPP02N(){
+ if(!lastStruk) return alert("Bayar dulu!");
+ let status=document.getElementById('printStatus');
+ try{
+  status.innerHTML="🔍 Cari RPP02N... Pair PIN 0000 dulu di Settings Bluetooth!";
+  let device;
+  try{
+   device = await navigator.bluetooth.requestDevice({
+    filters: [{name: "RPP02N"}, {namePrefix: "RPP"}, {services: ["00001101-0000-1000-8000-00805f9b34fb"]}],
+    optionalServices: ["00001101-0000-1000-8000-00805f9b34fb", 0xFF00, 0xFFE0, 0xFFF0, "000018f0-0000-1000-8000-00805f9b34fb"]
+   });
+  }catch(e){
+   device = await navigator.bluetooth.requestDevice({
+    acceptAllDevices: true,
+    optionalServices: ["00001101-0000-1000-8000-00805f9b34fb", 0xFF00, 0xFFE0, 0xFFF0, "000018f0-0000-1000-8000-00805f9b34fb", 0xFFE0]
+   });
+  }
+  status.innerHTML="🔗 Connect ke "+device.name+"...";
+  const server = await device.gatt.connect();
+  bluetoothDevice = device;
+  let service, char;
+  const serviceUuids = ["00001101-0000-1000-8000-00805f9b34fb", 0xFF00, 0xFFE0, 0xFFF0, "000018f0-0000-1000-8000-00805f9b34fb"];
+  for(let uuid of serviceUuids){ try{ service = await server.getPrimaryService(uuid); if(service) break; }catch(e){} }
+  if(!service){ let services = await server.getPrimaryServices(); if(services.length>0) service = services[0]; }
+  if(!service) throw new Error("Service tidak ketemu");
+  const charUuids = ["00001101-0000-1000-8000-00805f9b34fb", 0xFFE1, 0xFF02, "0000ff01-0000-1000-8000-00805f9b34fb", "0000ff02-0000-1000-8000-00805f9b34fb", "00002af1-0000-1000-8000-00805f9b34fb"];
+  for(let uuid of charUuids){ try{ char = await service.getCharacteristic(uuid); if(char) break; }catch(e){} }
+  if(!char){ let chars = await service.getCharacteristics(); if(chars.length>0) char = chars[0]; }
+  if(!char) throw new Error("Characteristic tidak ketemu");
+  bluetoothChar = char;
+  status.innerHTML="🖨️ Print ke "+device.name+"...";
+  let encoder = new TextEncoder();
+  try{ await char.writeValue(Uint8Array.from([27,64])); }catch(e){}
+  let text = lastStruk;
+  for(let i=0;i<text.length;i+=100){ let chunk = text.substring(i,i+100); await char.writeValue(encoder.encode(chunk)); await new Promise(r=>setTimeout(r,100)); }
+  await char.writeValue(encoder.encode("\n\n\n"));
+  status.innerHTML="✅ SUKSES PRINT ke "+device.name+"!";
+ }catch(e){
+  console.error(e);
+  let msg=e.message;
+  document.getElementById('printStatus').innerHTML="❌ GATT Failed: "+msg+"<br>Pakai tombol RAWBT di bawah (100% work)!";
+  // Auto fallback ke RawBT
+  setTimeout(()=>{ printRawBTRPP02N(); }, 800);
+ }
+}
+function printRawBTRPP02N(){
+ if(!lastStruk) return alert("Bayar dulu!");
+ let b64 = btoa(unescape(encodeURIComponent(lastStruk)));
+ let url = "rawbt:base64,"+b64;
+ let intentUrl = "intent:"+b64+"#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+ document.getElementById('printStatus').innerHTML="📱 Buka RawBT... Pilih RPP02N PIN 0000!";
+ window.location.href = url;
+ setTimeout(()=>{ window.location.href = intentUrl; }, 1200);
+}
+function printKertas(){
+ if(!lastStruk) return alert("Bayar dulu!");
+ let w=window.open("","","width=300,height=600");
+ w.document.write('<pre style="font-family:monospace;font-size:12px">'+lastStruk+'</pre>');
+ w.document.close(); w.print();
+}
+
+async function tambahMenu(){ let nama=document.getElementById('mNama').value.trim(); let harga=parseFloat(document.getElementById('mHarga').value)||0; let kat=document.getElementById('mKategori').value; if(!nama||harga<=0) return alert("Isi nama & harga"); let obj={nama,harga,kategori:kat,createdAt:Date.now()}; menu=menu.filter(m=>m.id!==nama); menu.push({id:nama,...obj}); localStorage.setItem('kbh_menu_final_v2', JSON.stringify(menu)); renderCat(); renderKasir(); renderMenuAdmin(); try{ if(window.db) await window.fs.setDoc(window.fs.doc(window.db,"menu",nama), obj); }catch(e){} document.getElementById('mNama').value=""; document.getElementById('mHarga').value=""; }
+
+function renderMenuAdmin(){
+ document.getElementById('tabelMenu').innerHTML="<tr><th>Nama</th><th>Harga</th><th>Kategori</th><th>Aksi</th></tr>"+menu.map(m=>"<tr><td><b>"+m.nama+"</b></td><td>Rp"+m.harga.toLocaleString('id-ID')+"</td><td>"+m.kategori+"</td><td><button onclick=\"editMenu('"+m.id.replace(/'/g,"\\'")+"')\" style=\"background:#1565C0;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;margin-right:4px\">✏️ Edit</button><button onclick=\"hapusMenu('"+m.id.replace(/'/g,"\\'")+"')\" style=\"background:#c0392b;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px\">Hapus</button></td></tr>").join("");
+ document.getElementById('totalMenu').innerText=menu.length;
+}
+
+function editMenu(id){
+ let m = menu.find(x=>x.id===id);
+ if(!m) return alert("Menu tidak ketemu");
+ let namaBaru = prompt("Edit Nama Menu:", m.nama);
+ if(namaBaru===null) return;
+ let hargaBaru = prompt("Edit Harga (angka saja):", m.harga);
+ if(hargaBaru===null) return;
+ let katBaru = prompt("Edit Kategori:", m.kategori);
+ if(katBaru===null) return;
+ hargaBaru = parseFloat(hargaBaru)||0;
+ if(!namaBaru.trim()||hargaBaru<=0) return alert("Nama & harga wajib!");
+ 
+ // Hapus old kalau nama berubah
+ if(namaBaru!==id){
+   menu=menu.filter(x=>x.id!==id);
+   // hapus di firebase old id
+   if(window.db){ import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js").then(mod=>{ mod.deleteDoc(mod.doc(window.db,"menu",id)); }); }
+ }
+ let obj={nama:namaBaru.trim(),harga:hargaBaru,kategori:katBaru.trim()||m.kategori,createdAt:Date.now()};
+ menu=menu.filter(x=>x.id!==namaBaru.trim());
+ menu.push({id:namaBaru.trim(),...obj});
+ localStorage.setItem('kbh_menu_final_v2', JSON.stringify(menu));
+ renderCat(); renderKasir(); renderMenuAdmin();
+ if(window.db){
+   window.fs.setDoc(window.fs.doc(window.db,"menu",namaBaru.trim()), obj).then(()=>{ alert("Berhasil edit: "+namaBaru); }).catch(e=>{ alert(e.message); });
+ } else {
+   alert("Berhasil edit (lokal): "+namaBaru);
+ }
+}
+
+async function hapusMenu(id){ if(!confirm("Hapus "+id+"?")) return; menu=menu.filter(m=>m.id!==id); localStorage.setItem('kbh_menu_final_v2', JSON.stringify(menu)); renderCat(); renderKasir(); renderMenuAdmin(); try{ const mod=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"); await mod.deleteDoc(window.fs.doc(window.db,"menu",id)); }catch(e){} }
+async function restoreDefault(){ if(!confirm("Kembalikan 105 menu Dapur Moro Kuto?")) return; menu=defaultMenu.map(m=>({id:m.nama, ...m})); localStorage.setItem('kbh_menu_final_v2', JSON.stringify(menu)); renderCat(); renderKasir(); renderMenuAdmin(); if(window.db){ for(let m of defaultMenu){ try{ await window.fs.setDoc(window.fs.doc(window.db,"menu",m.nama), m); }catch(e){} } } alert("Menu dipulihkan: "+menu.length); }
+async function hapusTransaksiSample(){ if(!confirm("Hapus SEMUA transaksi?")) return; if(!window.db) return alert("Firebase tidak connect"); try{ let snap=await window.fs.getDocs(window.fs.collection(window.db,"penjualan")); let count=0; for(let d of snap.docs){ await window.fs.deleteDoc(window.fs.doc(window.db,"penjualan",d.id)); count++; } alert("Berhasil hapus "+count+" transaksi!"); loadLaporan(); }catch(e){ alert("Gagal: "+e.message); } }
+function bersihkanLocal(){ if(!confirm("Bersihkan cache HP?")) return; localStorage.removeItem('kbh_menu_final_v2'); localStorage.removeItem('kbh_menu_simple'); location.reload(); }
+
+async function loadLaporan(){
+ try{
+  let snap=await window.fs.getDocs(window.fs.query(window.fs.collection(window.db,"penjualan"), window.fs.orderBy("createdAt","desc")));
+  let jual=snap.docs.map(d=>({id:d.id,...d.data()}));
+
+  // Filter kalau perlu by cabang? Admin lihat semua, cabang lihat cabang sendiri
+  // Untuk laporan perhari kita tetap pakai semua untuk admin, bung mau perhari semua cabang
+
+  // Group by tanggal (YYYY-MM-DD) - pakai tanggal lokal Indonesia
+  let groupHarian = {};
+  jual.forEach(r=>{
+    let d = new Date(r.tanggal);
+    let key = d.toLocaleDateString('id-ID',{year:'numeric',month:'2-digit',day:'2-digit'}); // dd/mm/yyyy
+    let keySort = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate(); // yyyymmdd untuk sort
+    // Simpan juga iso untuk sorting
+    let iso = d.toISOString().slice(0,10); // yyyy-mm-dd
+    if(!groupHarian[iso]) groupHarian[iso] = {label:key, iso:iso, sort:keySort, items:[], total:0, transaksi:0};
+    groupHarian[iso].items.push(r);
+    groupHarian[iso].total += r.total||0;
+    groupHarian[iso].transaksi += 1;
+  });
+
+  // Sort by date desc
+  let arrHarian = Object.values(groupHarian).sort((a,b)=>b.sort-a.sort);
+
+  // Hitung subtotal 1 bulan ini dan bulan lalu
+  let now = new Date();
+  let bulanIni = now.getMonth(), tahunIni = now.getFullYear();
+  let totalBulanIni = 0, trxBulanIni=0;
+  let totalBulanLalu = 0;
+  let kemarin = new Date(); kemarin.setDate(kemarin.getDate()-1);
+  let isoKemarin = kemarin.toISOString().slice(0,10);
+  let totalKemarin = 0;
+  jual.forEach(r=>{
+    let d = new Date(r.tanggal);
+    if(d.getMonth()==bulanIni && d.getFullYear()==tahunIni){ totalBulanIni+=r.total||0; trxBulanIni++; }
+    let bulanLalu = new Date(tahunIni, bulanIni-1, 1);
+    if(d.getMonth()==bulanLalu.getMonth() && d.getFullYear()==bulanLalu.getFullYear()) totalBulanLalu+=r.total||0;
+    if(r.tanggal.slice(0,10)==isoKemarin) totalKemarin+=r.total||0;
+  });
+
+  let totAll = jual.reduce((t,r)=>t+(r.total||0),0);
+
+  // Render ringkasan
+  let bulanNama = now.toLocaleDateString('id-ID',{month:'long', year:'numeric'});
+  document.getElementById('ringkasan').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:white;padding:8px;border-radius:8px;border-left:4px solid #B71C1C">
+        <div style="font-size:10px;color:#666">HARI INI</div><b style="font-size:14px">Rp${(groupHarian[now.toISOString().slice(0,10)]?.total||0).toLocaleString('id-ID')}</b><div style="font-size:9px">${groupHarian[now.toISOString().slice(0,10)]?.transaksi||0} trx</div>
+      </div>
+      <div style="background:white;padding:8px;border-radius:8px;border-left:4px solid #EF6C00">
+        <div style="font-size:10px;color:#666">KEMARIN</div><b style="font-size:14px">Rp${totalKemarin.toLocaleString('id-ID')}</b><div style="font-size:9px">tgl ${kemarin.toLocaleDateString('id-ID')}</div>
+      </div>
+      <div style="background:white;padding:8px;border-radius:8px;border-left:4px solid #2E7D32">
+        <div style="font-size:10px;color:#666">BULAN INI - ${bulanNama.toUpperCase()}</div><b style="font-size:16px;color:#2E7D32">Rp${totalBulanIni.toLocaleString('id-ID')}</b><div style="font-size:9px">${trxBulanIni} transaksi</div>
+      </div>
+      <div style="background:white;padding:8px;border-radius:8px;border-left:4px solid #888">
+        <div style="font-size:10px;color:#666">TOTAL SEMUA</div><b style="font-size:14px">Rp${totAll.toLocaleString('id-ID')}</b><div style="font-size:9px">${jual.length} trx | ${menu.length} menu</div>
+      </div>
+    </div>
+  `;
+
+  // Render tabel perhari
+  let htmlPerhari = `<tr><th>Tanggal</th><th>Hari</th><th>Jml Trx</th><th>Subtotal Harian</th><th>Detail</th></tr>`;
+  arrHarian.forEach(g=>{
+    let d = new Date(g.iso);
+    let hari = d.toLocaleDateString('id-ID',{weekday:'long'});
+    let tglFull = d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+    htmlPerhari += `<tr style="background:${g.iso===now.toISOString().slice(0,10)?'#fff8f0':''};border-left:4px solid ${g.iso===now.toISOString().slice(0,10)?'#B71C1C':'#ddd'}">
+      <td><b>${tglFull}</b><br><small style="font-size:9px;color:#666">${g.iso}</small></td>
+      <td>${hari}</td>
+      <td style="text-align:center"><b>${g.transaksi}</b></td>
+      <td style="font-weight:bold;color:#B71C1C">Rp${g.total.toLocaleString('id-ID')}</td>
+      <td><button onclick="detailHarian('${g.iso}')" style="background:#B71C1C;color:white;border:none;padding:4px 8px;border-radius:6px;font-size:10px">Lihat ${g.items.length}</button></td>
+    </tr>`;
+  });
+  document.getElementById('tabelLaporan').innerHTML = htmlPerhari;
+
+  // Simpan untuk detail
+  window._laporanHarian = groupHarian;
+  window._jualAll = jual;
+
+ }catch(e){
+  document.getElementById('ringkasan').innerText="Error: "+e.message;
+ }
+}
+
+function detailHarian(iso){
+ let g = window._laporanHarian[iso];
+ if(!g) return;
+ let d = new Date(iso);
+ let tgl = d.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+ let html = `<div style="padding:12px"><h3>${tgl} - Rp${g.total.toLocaleString('id-ID')} (${g.transaksi} trx)</h3><table class="tabel"><tr><th>Jam</th><th>Cabang</th><th>Kasir</th><th>Total</th><th>Item</th></tr>`;
+ g.items.forEach(r=>{
+   let jam = new Date(r.tanggal).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+   html += `<tr><td>${jam}</td><td>${r.cabang||'-'}</td><td>${r.kasir||'-'}</td><td>Rp${(r.total||0).toLocaleString('id-ID')}</td><td style="font-size:9px">${(r.items||[]).map(i=>i.nama+' x'+i.qty).join(', ')}</td></tr>`;
+ });
+ html += `</table><br><button class="btn btn-red" onclick="closeDetail()">Tutup</button></div>`;
+ document.getElementById('detailHarian').innerHTML = html;
+ document.getElementById('detailHarian').style.display='block';
+}
+function closeDetail(){ document.getElementById('detailHarian').style.display='none'; }
+
+function logout(){ if(confirm("Keluar?")){ localStorage.removeItem('kbh_role'); location.reload(); } }
+let sr=localStorage.getItem('kbh_role'); if(sr){ role=sr; cabang=localStorage.getItem('kbh_cabang')||"Cabang"; kasir=localStorage.getItem('kbh_kasir')||"Kasir"; document.getElementById('login').classList.remove('active'); init(); }
+</script>
+</body></html>
